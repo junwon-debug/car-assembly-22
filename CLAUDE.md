@@ -47,3 +47,4 @@ pytest path/to/test_x.py::test_name   # 단일 테스트 실행
 
 - 도메인 로직(자동차 조립 규칙): [docs/DOMAIN.md](docs/DOMAIN.md)
 - 현재 코드 구조: [docs/CODE_STRUCTURE.md](docs/CODE_STRUCTURE.md)
+- 리팩토링 계획(TDD, Phase별 진행): [docs/PLAN.md](docs/PLAN.md)
