@@ -1,34 +1,61 @@
 import time
 import sys
+from dataclasses import dataclass
+from enum import IntEnum
+from typing import Optional
 
 CLEAR_SCREEN = "\033[H\033[2J"
 
-CarType_Q = 0
-Engine_Q = 1
-brakeSystem_Q = 2
-SteeringSystem_Q = 3
-Run_Test = 4
 
-SEDAN = 1
-SUV = 2
-TRUCK = 3
+class CarType(IntEnum):
+    SEDAN = 1
+    SUV = 2
+    TRUCK = 3
 
-GM = 1
-TOYOTA = 2
-WIA = 3
 
-MANDO = 1
-CONTINENTAL = 2
-BOSCH_B = 3
+class Engine(IntEnum):
+    GM = 1
+    TOYOTA = 2
+    WIA = 3
+    BROKEN = 4
 
-BOSCH_S = 1
-MOBIS = 2
 
-q0 = 0
-q1 = 0
-q2 = 0
-q3 = 0
-q4 = 0
+class Brake(IntEnum):
+    MANDO = 1
+    CONTINENTAL = 2
+    BOSCH_B = 3
+
+
+class Steering(IntEnum):
+    BOSCH_S = 1
+    MOBIS = 2
+
+
+SEDAN = CarType.SEDAN
+SUV = CarType.SUV
+TRUCK = CarType.TRUCK
+
+GM = Engine.GM
+TOYOTA = Engine.TOYOTA
+WIA = Engine.WIA
+
+MANDO = Brake.MANDO
+CONTINENTAL = Brake.CONTINENTAL
+BOSCH_B = Brake.BOSCH_B
+
+BOSCH_S = Steering.BOSCH_S
+MOBIS = Steering.MOBIS
+
+
+@dataclass
+class Car:
+    car_type: Optional[CarType] = None
+    engine: Optional[Engine] = None
+    brake: Optional[Brake] = None
+    steering: Optional[Steering] = None
+
+
+car = Car()
 
 def delay(ms):
     t = ms / 1000.0
@@ -99,109 +126,108 @@ def is_valid_range(step, ans):
             return False
     return True
 
+CAR_TYPE_SELECT_MESSAGES = {
+    CarType.SEDAN: "차량 타입으로 Sedan을 선택하셨습니다.",
+    CarType.SUV: "차량 타입으로 SUV을 선택하셨습니다.",
+    CarType.TRUCK: "차량 타입으로 Truck을 선택하셨습니다.",
+}
+
+ENGINE_SELECT_MESSAGES = {
+    Engine.GM: "GM 엔진을 선택하셨습니다.",
+    Engine.TOYOTA: "TOYOTA 엔진을 선택하셨습니다.",
+    Engine.WIA: "WIA 엔진을 선택하셨습니다.",
+    Engine.BROKEN: "고장난 엔진을 선택하셨습니다.",
+}
+
+BRAKE_SELECT_MESSAGES = {
+    Brake.MANDO: "MANDO 제동장치를 선택하셨습니다.",
+    Brake.CONTINENTAL: "CONTINENTAL 제동장치를 선택하셨습니다.",
+    Brake.BOSCH_B: "BOSCH 제동장치를 선택하셨습니다.",
+}
+
+STEERING_SELECT_MESSAGES = {
+    Steering.BOSCH_S: "BOSCH 조향장치를 선택하셨습니다.",
+    Steering.MOBIS: "MOBIS 조향장치를 선택하셨습니다.",
+}
+
+CAR_TYPE_LABELS = {CarType.SEDAN: "Sedan", CarType.SUV: "SUV", CarType.TRUCK: "Truck"}
+ENGINE_LABELS = {Engine.GM: "GM", Engine.TOYOTA: "TOYOTA", Engine.WIA: "WIA"}
+BRAKE_LABELS = {Brake.MANDO: "Mando", Brake.CONTINENTAL: "Continental", Brake.BOSCH_B: "Bosch"}
+STEERING_LABELS = {Steering.BOSCH_S: "Bosch", Steering.MOBIS: "Mobis"}
+
 def select_car_type(a):
-    global q0
-    q0 = a
-    if a == 1:
-        print("차량 타입으로 Sedan을 선택하셨습니다.")
-    elif a == 2:
-        print("차량 타입으로 SUV을 선택하셨습니다.")
-    elif a == 3:
-        print("차량 타입으로 Truck을 선택하셨습니다.")
+    car.car_type = CarType(a)
+    message = CAR_TYPE_SELECT_MESSAGES.get(car.car_type)
+    if message:
+        print(message)
 
 def select_engine(a):
-    global q1
-    q1 = a
-    if a == 1:
-        print("GM 엔진을 선택하셨습니다.")
-    elif a == 2:
-        print("TOYOTA 엔진을 선택하셨습니다.")
-    elif a == 3:
-        print("WIA 엔진을 선택하셨습니다.")
-    elif a == 4:
-        print("고장난 엔진을 선택하셨습니다.")
+    car.engine = Engine(a)
+    message = ENGINE_SELECT_MESSAGES.get(car.engine)
+    if message:
+        print(message)
 
 def select_brake(a):
-    global q2
-    q2 = a
-    if a == 1:
-        print("MANDO 제동장치를 선택하셨습니다.")
-    elif a == 2:
-        print("CONTINENTAL 제동장치를 선택하셨습니다.")
-    elif a == 3:
-        print("BOSCH 제동장치를 선택하셨습니다.")
+    car.brake = Brake(a)
+    message = BRAKE_SELECT_MESSAGES.get(car.brake)
+    if message:
+        print(message)
 
 def select_steering(a):
-    global q3
-    q3 = a
-    if a == 1:
-        print("BOSCH 조향장치를 선택하셨습니다.")
-    elif a == 2:
-        print("MOBIS 조향장치를 선택하셨습니다.")
+    car.steering = Steering(a)
+    message = STEERING_SELECT_MESSAGES.get(car.steering)
+    if message:
+        print(message)
+
+def find_constraint_violation(target_car):
+    if target_car.car_type == SEDAN and target_car.brake == CONTINENTAL:
+        return "Sedan에는 Continental제동장치 사용 불가"
+    if target_car.car_type == SUV and target_car.engine == TOYOTA:
+        return "SUV에는 TOYOTA엔진 사용 불가"
+    if target_car.car_type == TRUCK and target_car.engine == WIA:
+        return "Truck에는 WIA엔진 사용 불가"
+    if target_car.car_type == TRUCK and target_car.brake == MANDO:
+        return "Truck에는 Mando제동장치 사용 불가"
+    if target_car.brake == BOSCH_B and target_car.steering != BOSCH_S:
+        return "Bosch제동장치에는 Bosch조향장치 이외 사용 불가"
+    return None
 
 def is_valid_check():
-    if q0 == SEDAN and q2 == CONTINENTAL:
-        return False
-    if q0 == SUV and q1 == TOYOTA:
-        return False
-    if q0 == TRUCK and q1 == WIA:
-        return False
-    if q0 == TRUCK and q2 == MANDO:
-        return False
-    if q2 == BOSCH_B and q3 != BOSCH_S:
-        return False
-    return True
+    return find_constraint_violation(car) is None
 
 def run_produced_car():
     if not is_valid_check():
         print("자동차가 동작되지 않습니다")
         return
-    if q1 == 4:
+    if car.engine == Engine.BROKEN:
         print("엔진이 고장나있습니다.")
         print("자동차가 움직이지 않습니다.")
         return
 
-    if q0 == 1:
-        print("Car Type : Sedan")
-    elif q0 == 2:
-        print("Car Type : SUV")
-    elif q0 == 3:
-        print("Car Type : Truck")
+    car_type_label = CAR_TYPE_LABELS.get(car.car_type)
+    if car_type_label:
+        print(f"Car Type : {car_type_label}")
 
-    if q1 == 1:
-        print("Engine   : GM")
-    elif q1 == 2:
-        print("Engine   : TOYOTA")
-    elif q1 == 3:
-        print("Engine   : WIA")
+    engine_label = ENGINE_LABELS.get(car.engine)
+    if engine_label:
+        print(f"Engine   : {engine_label}")
 
-    if q2 == 1:
-        print("Brake    : Mando")
-    elif q2 == 2:
-        print("Brake    : Continental")
-    elif q2 == 3:
-        print("Brake    : Bosch")
+    brake_label = BRAKE_LABELS.get(car.brake)
+    if brake_label:
+        print(f"Brake    : {brake_label}")
 
-    if q3 == 1:
-        print("Steering : Bosch")
-    elif q3 == 2:
-        print("Steering : Mobis")
+    steering_label = STEERING_LABELS.get(car.steering)
+    if steering_label:
+        print(f"Steering : {steering_label}")
 
     print("자동차가 동작됩니다.")
 
 def test_produced_car():
-    if q0 == SEDAN and q2 == CONTINENTAL:
-        print("FAIL\nSedan에는 Continental제동장치 사용 불가")
-    elif q0 == SUV and q1 == TOYOTA:
-        print("FAIL\nSUV에는 TOYOTA엔진 사용 불가")
-    elif q0 == TRUCK and q1 == WIA:
-        print("FAIL\nTruck에는 WIA엔진 사용 불가")
-    elif q0 == TRUCK and q2 == MANDO:
-        print("FAIL\nTruck에는 Mando제동장치 사용 불가")
-    elif q2 == BOSCH_B and q3 != BOSCH_S:
-        print("FAIL\nBosch제동장치에는 Bosch조향장치 이외 사용 불가")
-    else:
+    violation = find_constraint_violation(car)
+    if violation is None:
         print("PASS")
+    else:
+        print(f"FAIL\n{violation}")
 
 def main():
     step = 0
@@ -215,7 +241,7 @@ def main():
 
         try:
             ans = int(buf)
-        except:
+        except ValueError:
             print("ERROR :: 숫자만 입력 가능")
             delay(800)
             continue

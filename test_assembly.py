@@ -5,40 +5,25 @@ import assembly
 
 @pytest.fixture(autouse=True)
 def reset_globals():
-    """매 테스트 실행 전 assembly 모듈의 전역 상태(q0~q4)를 0으로 리셋한다."""
-    assembly.q0 = 0
-    assembly.q1 = 0
-    assembly.q2 = 0
-    assembly.q3 = 0
-    assembly.q4 = 0
+    """매 테스트 실행 전 assembly 모듈의 전역 car 인스턴스를 새로 만들어 리셋한다."""
+    assembly.car = assembly.Car()
     yield
 
 
-def test_reset_globals_sets_all_state_to_zero():
-    assert assembly.q0 == 0
-    assert assembly.q1 == 0
-    assert assembly.q2 == 0
-    assert assembly.q3 == 0
-    assert assembly.q4 == 0
+def test_reset_car_fixture_provides_fresh_car_between_tests():
+    # 이 테스트에서 전역 car 상태를 오염시킨다.
+    assembly.car.car_type = assembly.CarType.SUV
+    assembly.car.engine = assembly.Engine.TOYOTA
+    assembly.car.brake = assembly.Brake.CONTINENTAL
+    assembly.car.steering = assembly.Steering.MOBIS
+    assert assembly.car.car_type == assembly.CarType.SUV
 
-
-def test_reset_globals_mutates_previous_state_before_next_test():
-    # 이전 테스트 실행 중 상태를 임의로 오염시킨다.
-    assembly.q0 = 99
-    assembly.q1 = 99
-    assembly.q2 = 99
-    assembly.q3 = 99
-    assembly.q4 = 99
-    assert assembly.q0 == 99
-
-
-def test_reset_globals_actually_resets_after_pollution():
-    # 직전 테스트에서 오염시킨 상태가 fixture에 의해 리셋되었는지 확인한다.
-    assert assembly.q0 == 0
-    assert assembly.q1 == 0
-    assert assembly.q2 == 0
-    assert assembly.q3 == 0
-    assert assembly.q4 == 0
+    # fixture가 재실행되며 새 Car 인스턴스를 만든 것처럼 검증한다.
+    assembly.car = assembly.Car()
+    assert assembly.car.car_type is None
+    assert assembly.car.engine is None
+    assert assembly.car.brake is None
+    assert assembly.car.steering is None
 
 
 @pytest.mark.parametrize(
@@ -59,10 +44,10 @@ def test_reset_globals_actually_resets_after_pollution():
     ],
 )
 def test_is_valid_check(q0, q1, q2, q3, expected):
-    assembly.q0 = q0
-    assembly.q1 = q1
-    assembly.q2 = q2
-    assembly.q3 = q3
+    assembly.car.car_type = q0
+    assembly.car.engine = q1
+    assembly.car.brake = q2
+    assembly.car.steering = q3
 
     assert assembly.is_valid_check() == expected
 
@@ -121,10 +106,10 @@ def test_is_valid_check(q0, q1, q2, q3, expected):
     ],
 )
 def test_produced_car(capsys, q0, q1, q2, q3, expected_output):
-    assembly.q0 = q0
-    assembly.q1 = q1
-    assembly.q2 = q2
-    assembly.q3 = q3
+    assembly.car.car_type = q0
+    assembly.car.engine = q1
+    assembly.car.brake = q2
+    assembly.car.steering = q3
 
     assembly.test_produced_car()
 
@@ -142,7 +127,7 @@ def test_produced_car(capsys, q0, q1, q2, q3, expected_output):
 def test_select_car_type(capsys, a, expected_output):
     assembly.select_car_type(a)
 
-    assert assembly.q0 == a
+    assert assembly.car.car_type == a
     assert capsys.readouterr().out == expected_output
 
 
@@ -158,7 +143,7 @@ def test_select_car_type(capsys, a, expected_output):
 def test_select_engine(capsys, a, expected_output):
     assembly.select_engine(a)
 
-    assert assembly.q1 == a
+    assert assembly.car.engine == a
     assert capsys.readouterr().out == expected_output
 
 
@@ -173,7 +158,7 @@ def test_select_engine(capsys, a, expected_output):
 def test_select_brake(capsys, a, expected_output):
     assembly.select_brake(a)
 
-    assert assembly.q2 == a
+    assert assembly.car.brake == a
     assert capsys.readouterr().out == expected_output
 
 
@@ -187,7 +172,7 @@ def test_select_brake(capsys, a, expected_output):
 def test_select_steering(capsys, a, expected_output):
     assembly.select_steering(a)
 
-    assert assembly.q3 == a
+    assert assembly.car.steering == a
     assert capsys.readouterr().out == expected_output
 
 
@@ -236,10 +221,10 @@ def test_is_valid_range(capsys, step, ans, expected):
 def test_run_produced_car_invalid_combination_only_shows_failure_message(capsys):
     """제약 위반 조합에서는 '자동차가 동작되지 않습니다'만 출력되고
     Car Type 등 필드 라인은 전혀 출력되지 않는다."""
-    assembly.q0 = assembly.SEDAN
-    assembly.q1 = assembly.GM
-    assembly.q2 = assembly.CONTINENTAL
-    assembly.q3 = assembly.BOSCH_S
+    assembly.car.car_type = assembly.SEDAN
+    assembly.car.engine = assembly.GM
+    assembly.car.brake = assembly.CONTINENTAL
+    assembly.car.steering = assembly.BOSCH_S
 
     assembly.run_produced_car()
 
@@ -254,10 +239,10 @@ def test_run_produced_car_invalid_combination_only_shows_failure_message(capsys)
 def test_run_produced_car_valid_combination_with_broken_engine(capsys):
     """유효한 조합이더라도 엔진이 고장난 경우(q1=4)에는 is_valid_check를 통과한 뒤
     별도의 엔진 고장 체크에서 걸려 필드 라인 없이 고장 메시지만 출력된다."""
-    assembly.q0 = assembly.SEDAN
-    assembly.q1 = 4
-    assembly.q2 = assembly.MANDO
-    assembly.q3 = assembly.BOSCH_S
+    assembly.car.car_type = assembly.SEDAN
+    assembly.car.engine = 4
+    assembly.car.brake = assembly.MANDO
+    assembly.car.steering = assembly.BOSCH_S
 
     assembly.run_produced_car()
 
@@ -272,10 +257,10 @@ def test_run_produced_car_valid_combination_with_broken_engine(capsys):
 def test_run_produced_car_fully_valid_combination_prints_all_fields_in_order(capsys):
     """완전히 정상적인 조합에서는 Car Type, Engine, Brake, Steering,
     동작 완료 메시지가 정확한 라벨과 순서로 출력된다."""
-    assembly.q0 = assembly.SEDAN
-    assembly.q1 = assembly.GM
-    assembly.q2 = assembly.MANDO
-    assembly.q3 = assembly.BOSCH_S
+    assembly.car.car_type = assembly.SEDAN
+    assembly.car.engine = assembly.GM
+    assembly.car.brake = assembly.MANDO
+    assembly.car.steering = assembly.BOSCH_S
 
     assembly.run_produced_car()
 
@@ -343,27 +328,183 @@ def test_run_produced_car_fully_valid_combination_prints_all_fields_in_order(cap
     ],
 )
 def test_run_produced_car_field_labels(capsys, q0, q1, q2, q3, expected_output):
-    assembly.q0 = q0
-    assembly.q1 = q1
-    assembly.q2 = q2
-    assembly.q3 = q3
+    assembly.car.car_type = q0
+    assembly.car.engine = q1
+    assembly.car.brake = q2
+    assembly.car.steering = q3
 
     assembly.run_produced_car()
 
     assert capsys.readouterr().out == expected_output
 
 
+@pytest.mark.parametrize(
+    "enum_member, alias",
+    [
+        (assembly.CarType.SEDAN, assembly.SEDAN),
+        (assembly.CarType.SUV, assembly.SUV),
+        (assembly.CarType.TRUCK, assembly.TRUCK),
+        (assembly.Engine.GM, assembly.GM),
+        (assembly.Engine.TOYOTA, assembly.TOYOTA),
+        (assembly.Engine.WIA, assembly.WIA),
+        (assembly.Brake.MANDO, assembly.MANDO),
+        (assembly.Brake.CONTINENTAL, assembly.CONTINENTAL),
+        (assembly.Brake.BOSCH_B, assembly.BOSCH_B),
+        (assembly.Steering.BOSCH_S, assembly.BOSCH_S),
+        (assembly.Steering.MOBIS, assembly.MOBIS),
+    ],
+)
+def test_enum_alias_matches_legacy_constant(enum_member, alias):
+    assert enum_member == alias
+
+
+@pytest.mark.parametrize(
+    "value, enum_class",
+    [
+        (assembly.SEDAN, assembly.CarType),
+        (assembly.SUV, assembly.CarType),
+        (assembly.TRUCK, assembly.CarType),
+        (assembly.GM, assembly.Engine),
+        (assembly.TOYOTA, assembly.Engine),
+        (assembly.WIA, assembly.Engine),
+        (assembly.MANDO, assembly.Brake),
+        (assembly.CONTINENTAL, assembly.Brake),
+        (assembly.BOSCH_B, assembly.Brake),
+        (assembly.BOSCH_S, assembly.Steering),
+        (assembly.MOBIS, assembly.Steering),
+    ],
+)
+def test_legacy_constant_is_instance_of_enum(value, enum_class):
+    assert isinstance(value, enum_class)
+
+
 def test_produced_car_elif_priority_only_first_matching_condition_reported(capsys):
     """q0=TRUCK, q1=WIA, q2=MANDO 처럼 조건3(WIA엔진)과 조건4(Mando제동장치)가
     동시에 성립 가능한 조합에서, if/elif 체인 구조상 먼저 나오는 조건3의
     메시지만 출력되고 조건4의 메시지는 출력되지 않는다는 것을 특성화한다."""
-    assembly.q0 = assembly.TRUCK
-    assembly.q1 = assembly.WIA
-    assembly.q2 = assembly.MANDO
-    assembly.q3 = assembly.BOSCH_S
+    assembly.car.car_type = assembly.TRUCK
+    assembly.car.engine = assembly.WIA
+    assembly.car.brake = assembly.MANDO
+    assembly.car.steering = assembly.BOSCH_S
 
     assembly.test_produced_car()
 
     out = capsys.readouterr().out
     assert out == "FAIL\nTruck에는 WIA엔진 사용 불가\n"
     assert "Mando제동장치" not in out
+
+
+@pytest.mark.parametrize(
+    "car_type, engine, brake, steering, expected",
+    [
+        # 1. Sedan + Continental 제동장치 조합 불가
+        (
+            assembly.SEDAN,
+            assembly.GM,
+            assembly.CONTINENTAL,
+            assembly.BOSCH_S,
+            "Sedan에는 Continental제동장치 사용 불가",
+        ),
+        # 2. SUV + TOYOTA 엔진 조합 불가
+        (
+            assembly.SUV,
+            assembly.TOYOTA,
+            assembly.MANDO,
+            assembly.BOSCH_S,
+            "SUV에는 TOYOTA엔진 사용 불가",
+        ),
+        # 3. Truck + WIA 엔진 조합 불가
+        (
+            assembly.TRUCK,
+            assembly.WIA,
+            assembly.CONTINENTAL,
+            assembly.BOSCH_S,
+            "Truck에는 WIA엔진 사용 불가",
+        ),
+        # 4. Truck + MANDO 제동장치 조합 불가
+        (
+            assembly.TRUCK,
+            assembly.GM,
+            assembly.MANDO,
+            assembly.BOSCH_S,
+            "Truck에는 Mando제동장치 사용 불가",
+        ),
+        # 5. Bosch 제동장치는 Bosch 조향장치와만 사용 가능
+        (
+            assembly.SEDAN,
+            assembly.GM,
+            assembly.BOSCH_B,
+            assembly.MOBIS,
+            "Bosch제동장치에는 Bosch조향장치 이외 사용 불가",
+        ),
+        # 정상 조합: 모든 제약 통과
+        (
+            assembly.SEDAN,
+            assembly.GM,
+            assembly.MANDO,
+            assembly.BOSCH_S,
+            None,
+        ),
+    ],
+)
+def test_find_constraint_violation(car_type, engine, brake, steering, expected):
+    target_car = assembly.Car(
+        car_type=car_type, engine=engine, brake=brake, steering=steering
+    )
+
+    assert assembly.find_constraint_violation(target_car) == expected
+
+
+def test_find_constraint_violation_elif_priority_only_first_matching_condition_reported():
+    """q0=TRUCK, q1=WIA, q2=MANDO 처럼 조건3(WIA엔진)과 조건4(Mando제동장치)가
+    동시에 성립 가능한 조합에서, 먼저 나오는 조건3의 메시지만 반환된다."""
+    target_car = assembly.Car(
+        car_type=assembly.TRUCK,
+        engine=assembly.WIA,
+        brake=assembly.MANDO,
+        steering=assembly.BOSCH_S,
+    )
+
+    assert (
+        assembly.find_constraint_violation(target_car)
+        == "Truck에는 WIA엔진 사용 불가"
+    )
+
+
+def test_car_default_construction_has_all_none_fields():
+    car = assembly.Car()
+    assert car.car_type is None
+    assert car.engine is None
+    assert car.brake is None
+    assert car.steering is None
+
+
+def test_car_construction_with_keyword_arguments_sets_fields():
+    car = assembly.Car(
+        car_type=assembly.CarType.SEDAN,
+        engine=assembly.Engine.GM,
+        brake=assembly.Brake.MANDO,
+        steering=assembly.Steering.BOSCH_S,
+    )
+    assert car.car_type == assembly.CarType.SEDAN
+    assert car.engine == assembly.Engine.GM
+    assert car.brake == assembly.Brake.MANDO
+    assert car.steering == assembly.Steering.BOSCH_S
+
+
+def test_car_fields_are_mutable_after_construction():
+    car = assembly.Car()
+    car.car_type = assembly.CarType.SUV
+    assert car.car_type == assembly.CarType.SUV
+
+
+def test_main_handles_non_numeric_input_as_value_error_and_exits(monkeypatch, capsys):
+    inputs = iter(["abc", "exit"])
+    monkeypatch.setattr("builtins.input", lambda *_args: next(inputs))
+    monkeypatch.setattr(assembly, "delay", lambda *_args: None)
+
+    assembly.main()
+
+    out = capsys.readouterr().out
+    assert "ERROR :: 숫자만 입력 가능" in out
+    assert "바이바이" in out
