@@ -43,6 +43,15 @@ pytest path/to/test_x.py::test_name   # 단일 테스트 실행
 - `docs`: 문서 추가/수정
 - `chore`: 그 외 잡다한 작업 (설정, 의존성 등)
 
+## 리팩토링 자동화 에이전트
+
+`docs/PLAN.md`의 Phase별 진행을 자동화하기 위해 `.claude/agents/`에 서브에이전트 3종이 정의되어 있다.
+Phase 진행을 요청받으면(예: "다음 phase 진행해") `orchestrator` 에이전트를 사용한다.
+
+- `orchestrator`: Phase 진행 전체를 지휘. 직접 구현하지 않고 아래 두 에이전트에 위임 후 검증
+- `phase-task-writer`: 현재 Phase의 태스크를 작성하고, 핵심 아키텍처 결정 사항은 사용자에게 확인받음
+- `tdd-implementer`: 태스크를 TDD(Red-Green-Refactor)로 구현
+
 ## 상세 문서
 
 - 도메인 로직(자동차 조립 규칙): [docs/DOMAIN.md](docs/DOMAIN.md)
